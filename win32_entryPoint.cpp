@@ -18,30 +18,27 @@ global_variable bool running = true;
 global_variable void *BitmapMemory;
 
 
-local_function void displayPixel(int width, int height, int bytesPerPixel) {
+
+
+local_function void displayPixel(int width, int height, int bytesPerPixel, int xOffset, int yOffset) {
     int Pitch = width * bytesPerPixel;
     uint8* Row = (uint8*)BitmapMemory;
 
     for (int y = 0; y < height; ++y) {
-        uint8* Pixel = (uint8*)Row;
+        uint32* Pixel = (uint32*)Row;
         for (int x = 0; x < width; ++x) {
 
-            *Pixel = 0;
-            Pixel++;
+            uint8 blue = (x + xOffset);
+            uint8 green = (y + yOffset);
 
-            *Pixel = 0;
-            Pixel++;
-
-            *Pixel = 255;
-            Pixel++;
-
-            *Pixel = 0;
-            Pixel++;
+            *Pixel++ = ((green << 8) | blue);
         };
         Row += Pitch;
     };
 };
 
+int xOffset = 0;
+int yOffset = 0;
 local_function void BitmapResize(int width, int height) {
     if (BitmapMemory) {
         VirtualFree(BitmapMemory, 0, MEM_RELEASE);
@@ -58,8 +55,9 @@ local_function void BitmapResize(int width, int height) {
         MessageBoxA(0, "VirtualAlloc failed", "Shit", 0);
     };
 
-    displayPixel(width, height, bytesPerPixel);
-
+    displayPixel(width, height, bytesPerPixel, xOffset, yOffset);
+    xOffset += 3;
+    yOffset += 2;
     
 };
 
@@ -91,6 +89,7 @@ local_function void BitmapRepaint(HDC handleDeviceContext, int width, int height
     if (!outcome) {
         MessageBoxA(0, "StretchDIBits failed", "shit", 0);
     };
+
 };
 
 LRESULT Wndproc(
@@ -137,6 +136,7 @@ LRESULT Wndproc(
             return DefWindowProcA(Window, Message, unnamedParam3, unnamedParam4);
             break;
     }
+    return 0;
 }
 
 int WINAPI WinMain(
@@ -169,6 +169,7 @@ int WINAPI WinMain(
             Instance,
             0);
 
+
         if (windowHandle) {
             MSG Message;
             while (running) {
@@ -185,8 +186,7 @@ int WINAPI WinMain(
                     TranslateMessage(&Message);
                     DispatchMessageA(&Message);
                 }
-                   
-            }
+            };
              
         }
         else {
